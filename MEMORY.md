@@ -30,10 +30,10 @@ Whenever a code change is about to happen, frame Git like a team workflow:
   - `about.vue` — About me, hobby list.
   - `notes.vue` — Notes page: list + add form, uses `useFetch`/`$fetch`/`refresh`.
 - Server API in `server/api/`:
-  - `notes.get.ts` — `GET /api/notes` — returns a hardcoded array of 3 notes.
-  - `notes.post.ts` — `POST /api/notes` — creates a note, returns it.
-- `server/utils/notes.ts` — leftover/duplicate POST handler, not wired in (see gap #4).
-- Repo has **zero commits**. `git log` fails; only `.gitignore` and the working tree exist.
+  - `notes.get.ts` — `GET /api/notes` — imports `notes` from `server/utils/notes.ts`, returns it.
+  - `notes.post.ts` — `POST /api/notes` — imports `addNote()` from `server/utils/notes.ts`, returns the new note.
+- `server/utils/notes.ts` — canonical in-memory store. Exports `notes`, `nextId`, `addNote()`. Single source of truth for both API routes.
+- Repo history (as of last sync): 5 commits on `main`; `fix/notes-post-not-persisting` published to remote with the shared-store refactor and the persistence fix. Default branch on remote: `main`.
 
 ### Deliberate gaps — next teaching exercises
 
@@ -41,15 +41,16 @@ These are **intentional prompts, not bugs to silently fix**. Surface them, don't
 
 1. **Nav is incomplete.** `app/app.vue` only links to `/` and `/about`. `/notes` is unreachable from the nav.
 2. **Missing endpoint.** `app/pages/index.vue` calls `/api/hello`, but there is no `hello` handler in `server/api/`.
-3. **API state isn't shared.** `notes.post.ts` returns a new note but does **not** append it to the array in `notes.get.ts`. The two handlers don't share state. Data is also in-memory only — lost on every restart.
-4. **Stale utility file.** `server/utils/notes.ts` duplicates the POST logic and imports from the API route files. Not wired into anything.
+3. **API state isn't shared.** ~~Resolved on `fix/notes-post-not-persisting`~~ — both handlers now read/write the same `server/utils/notes.ts` store, so POSTed notes appear on subsequent GETs. **Still in-memory only**: every server restart wipes the array. Persisting to disk or a DB is a separate exercise.
 5. **No initial commit / no remote.** Repo is uncommitted. Good moment to teach `git init` → `.gitignore` review → first conventional commit → branch for the next change.
 
 ### Suggested next lessons (pick one)
 
 - **Exercise A — Git fundamentals on existing code:** `git init` review, stage selectively, first commit (`chore: initial Nuxt 4 scaffold`), then branch (`feature/nav-includes-notes`) and fix gap #1 with `feat: link /notes from app nav`. Walk through `git status`, `git diff`, `git log --oneline`, `git switch`.
 - **Exercise B — Fix the broken hello call:** branch `fix/home-hello-endpoint`. Decide together: add `/api/hello` (small new handler), or change `index.vue` to call something real. Conventional commit, then merge back.
-- **Exercise C — Shared server state:** branch `feature/shared-notes-store`. Extract a single in-memory store, import it from both `notes.get.ts` and `notes.post.ts`. Teaches Nitro's `server/utils/` convention *and* fixes the actual data-loss bug.
+- **Exercise C — Shared server state:** branch ~~`feature/shared-notes-store`~~ completed as `fix/notes-post-not-persisting` (3 commits: extract store, GET reads from store, POST persists). Teaches Nitro's `server/utils/` convention *and* fixes the data-loss bug. **In-memory only — persistence is a future exercise.**
+- **Exercise D — Persistence:** branch `feature/persist-notes-store`. Decide a storage layer (JSON file in `.data/`, SQLite via `better-sqlite3`, etc.) and a write-through pattern that survives restart. Touches more than one file and is a natural `feat:` PR.
+- **Exercise E — Fix the broken hello call:** branch `fix/home-hello-endpoint`. `app/pages/index.vue` calls `/api/hello`, but there is no `hello` handler in `server/api/`. Decide together: add `/api/hello` (small new handler), or change `index.vue` to call something real.
 
 ## Conventions for working in this repo
 
