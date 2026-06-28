@@ -1,7 +1,6 @@
-let nextId = 3
+import {addNote} from '../utils/notes'
 
 export default defineEventHandler(async (event) => {
     const body = await readBody(event)
-    const note = { id: nextId++, text: body.text }
-    return note
+    return addNote(body.text)
 })
