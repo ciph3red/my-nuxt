@@ -1,12 +1,37 @@
-export let notes: {id: number, text: string}[] = [
-    {id: 1, text: "Learn Nuxt"},
-    {id: 2, text: "Build a REST API"},
-    {id: 3, text: "Deploy to production"}
-];
-export let nextId = 4;
+import Database from 'better-sqlite3'
+import { mkdirSync } from 'node:fs'
+import { join } from 'node:path'
 
-export function addNote(text: string) {
-    const note = { id: nextId++, text };
-    notes.push(note)
-    return note
+const DATA_DIR = join(process.cwd(), '.data')
+const DB_FILE = join(DATA_DIR, 'notes.sqlite')
+
+mkdirSync(DATA_DIR, { recursive: true })
+
+const db = new Database(DB_FILE)
+
+db.exec(`
+    CREATE TABLE IF NOT EXISTS notes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    text TEXT NOT NULL
+)
+`)
+
+const insertNote = db.prepare('INSERT INTO notes (text) VALUES (?)')
+const selectAllNotes = db.prepare('SELECT * FROM notes ORDER BY id')
+
+export type Note = {
+    id: number
+    text: string
 }
+
+export function addNote(text: string): Note {
+    const result = insertNote.run(text)
+    return { id: Number(result.lastInsertRowid), text }
+}
+
+export function getAllNotes(): Note[] {
+    return selectAllNotes.all() as Note[]
+}
+
+
+
