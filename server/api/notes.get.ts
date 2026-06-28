@@ -1,5 +1,5 @@
-import { notes } from '../utils/notes';
+import { getAllNotes } from '../utils/notes';
 
 export default defineEventHandler(() => {
-    return notes
+    return getAllNotes()
 });
