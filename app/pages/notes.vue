@@ -18,7 +18,7 @@ async function deleteNote(id: number){
     return 0;
 
     await $fetch('/api/notes/' + id, {method: 'DELETE'})
-    await refresh();
+    await refresh()
 
     
 }

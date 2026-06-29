@@ -21,7 +21,7 @@ Whenever a code change is about to happen, frame Git like a team workflow:
 - **Pair each Git step with its Nuxt step** so the user sees the full loop: branch → code → commit → (push → PR → review).
 - **Hands-on only** — never run commands unprompted. Propose the next step with the *why*, then wait for the user to run it.
 
-## Current state (as of 2026-06-28)
+## Current state (as of 2026-06-29)
 
 ### Built and working
 
@@ -29,20 +29,21 @@ Whenever a code change is about to happen, frame Git like a team workflow:
 - Pages in `app/pages/`:
   - `index.vue` — Home. Calls `/api/hello` via `useFetch`.
   - `about.vue` — About me, hobby list.
-  - `notes.vue` — Notes page: list + add form, uses `useFetch`/`$fetch`/`refresh`.
+  - `notes.vue` — Notes page: list + add form + per-note Delete button, uses `useFetch` / `$fetch` / `refresh`.
 - Server API in `server/api/`:
   - `hello.get.ts` — `GET /api/hello` — returns `{ message: 'Hello from Nuxt!' }`.
-  - `notes.get.ts` — `GET /api/notes` — imports `notes` from `server/utils/notes.ts`, returns it.
+  - `notes.get.ts` — `GET /api/notes` — imports `getAllNotes()` from `server/utils/notes.ts`, returns it.
   - `notes.post.ts` — `POST /api/notes` — imports `addNote()` from `server/utils/notes.ts`, returns the new note.
-- `server/utils/notes.ts` — canonical in-memory store. Exports `notes`, `nextId`, `addNote()`. Single source of truth for both notes API routes.
+  - `notes/[id].delete.ts` — `DELETE /api/notes/:id` — imports `deleteNote()`, returns 204 on success, 404 if the row doesn't exist, 400 if `:id` isn't a positive integer.
+- `server/utils/notes.ts` — canonical SQLite store at `.data/notes.sqlite` via `better-sqlite3`. Exports `Note` (type), `addNote(text)`, `getAllNotes()`, `deleteNote(id)`. Schema lives inline as a `CREATE TABLE IF NOT EXISTS` in the module body. Single source of truth for all notes API routes.
 - `app/app.vue` nav links: `/`, `/about`, `/notes`.
-- Repo history (as of last sync): 8 commits on `main`; default branch on remote is `main`. Two PRs merged so far (notes fix, hello endpoint). One previous branch (`feature/nav-includes-notes`) merged in via a local merge commit, not a PR.
+- Repo history: 6 merged PRs on `main`. Default branch on remote is `main`.
 
 ### Deliberate gaps — next teaching exercises
 
 These are **intentional prompts, not bugs to silently fix**. Surface them, don't paper over them.
 
-1. **In-memory persistence.** Both notes API routes share state, but the array is process-memory only — every server restart wipes it. Notes added during a session disappear on the next `npm run dev`. Persistence (JSON file in `.data/`, SQLite, etc.) is a real bug for a notes app and a natural `feature/persist-notes-store` PR.
+(none currently — open follow-ups live in the Session log)
 
 ### Suggested next lessons (pick one)
 
@@ -60,9 +61,9 @@ These are **intentional prompts, not bugs to silently fix**. Surface them, don't
 
 ## Session log
 
-### As of 2026-06-28 — break point
+### As of 2026-06-29 — end of session
 
-**Where we stopped:** `feature/delete-note` shipped on `feat/delete-note` (2 commits: server `df2a95a`, UI `8b5ede2`). Branch ready for push / PR / merge.
+**Where we stopped:** `feature/exam-delete-confirm` has one uncommitted-equivalent local commit (`f24a0c6 feat: confirm before deleting note`) on a local branch; **not yet pushed or merged**. `main` is clean and up to date at `b9c0ac2`.
 
 **Recently completed (this session and recent prior):**
 
@@ -70,20 +71,31 @@ These are **intentional prompts, not bugs to silently fix**. Surface them, don't
 - PR #2 `feat/hello-endpoint` merged (1 commit `5bfc4b2`).
 - PR #3 `chore/sync-memory` merged (1 commit `ae50bc3`).
 - PR #4 `feature/persist-notes-store` merged (2 commits: `775534e chore: added better-sqlite3 and deps`, `48a5d8c feat: persist added notes to SQLite`).
-- PR #5 `feature/delete-note` shipped on `feat/delete-note` (2 commits, not yet merged): `df2a95a feat: added DELETE /api/notes/[id] endpoint`, `8b5ede2 feat: added Delete button to notes page`. Server: `deleteNote(id)` in `server/utils/notes.ts`, `DELETE /api/notes/:id` returns 204/404/400. UI: per-note Delete button in `notes.vue`.
+- PR #5 `feat/delete-note` (from 2026-06-28) was actually a docs-only sync, not the real delete-note code — branch reused for the lesson below.
+- PR #6 `feat/delete-note` merged into `main` as `b9c0ac2` (3 commits: `df2a95a feat: added DELETE /api/notes/[id] endpoint`, `8b5ede2 feat: added Delete button to notes page`, `1dc0f49 docs: sync memory.md with newer data`).
 - Housekeeping commit `23548a4 housekeeping: removed duplicate .data entry in gitignore`.
 
 **Architectural state of `main`:**
 
-- `server/utils/notes.ts` uses `better-sqlite3`, file at `.data/notes.sqlite`. Exports `addNote`, `getAllNotes`, type `Note`. Schema lives inline as a `CREATE TABLE IF NOT EXISTS` in the module body. The `note` API uses `getAllNotes()` / `addNote()` (no longer the old `notes` array).
+- `server/utils/notes.ts` uses `better-sqlite3`, file at `.data/notes.sqlite`. Exports `addNote`, `getAllNotes`, `deleteNote`, type `Note`. Schema lives inline as a `CREATE TABLE IF NOT EXISTS` in the module body. The notes API uses `getAllNotes()` / `addNote()` / `deleteNote()` (no longer the old in-memory array).
 - `app/pages/notes.vue` calls `/api/notes/`, POSTs to `/api/notes`, and DELETEs per-note via `/api/notes/:id`; refreshes after each mutation.
+- `server/api/notes/[id].delete.ts` returns 204/404/400 per spec.
 - No tests yet.
-- `MEMORY.md` is accurate as of last sync; the only stale-looking wording is past-tense commit messages and one `doc:` vs `docs:` subject (commit `ae50bc3`) — not worth rewriting history to fix.
+- MEMORY.md is now synced for 2026-06-29.
 
-**Carry-forward design decisions for `feature/delete-note`:** ~~shipped on `feat/delete-note`, awaiting PR.~~
+**Unmerged branch (parked):**
+
+- `feature/exam-delete-confirm` — local only, 1 commit `f24a0c6 feat: confirm before deleting note`. Adds a `window.confirm()` prompt before `$fetch` DELETE runs. Ready to push / PR / merge whenever.
+
+**Lesson shape decisions made this session (carry forward):**
+
+- `feature/delete-note` was committed as **2 commits** (server as one, UI as one) plus a separate `docs:` sync — user picked 2-code-commits when offered 1/2/3.
+- `feature/exam-delete-confirm` was committed as **1 commit** (single small UI tweak).
+- Branch reuse: the existing `feat/delete-note` branch was reused for the lesson rather than recreated. Worked because the upstream was already gone.
 
 **Open follow-ups noted but not started:**
 
-- Tests via Vitest (Option 3 from the last planning beat).
+- Push and merge `feature/exam-delete-confirm`.
+- Tests via Vitest (Option 3 from an earlier planning beat).
 - Edit-note (`feature/edit-note`) — adds PUT/PATCH semantics.
 - Tags / categories (`feature/note-tags`) — schema migration.
