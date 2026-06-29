@@ -13,6 +13,11 @@ async function addNote() {
     await refresh()
 }
 
+async function deleteNote(id: number){
+    await $fetch('/api/notes/' + id, {method: 'DELETE'})
+    await refresh()
+}
+
 function clearDraft(){
     draft.value = ''
 }
@@ -23,7 +28,8 @@ function clearDraft(){
     <h1>Notes</h1>
     <p>{{ notes?.length ?? 0 }} notes</p>
     <ul>
-        <li v-for="note in notes" :key="note.id">{{ note.text }}</li>
+        <li v-for="note in notes" :key="note.id">{{ note.text }}
+        <button type='button' @click="deleteNote(note.id)">Delete</button></li>
     </ul>
     <form @submit.prevent="addNote">
         <input v-model="draft" placeholder="New note..." />
