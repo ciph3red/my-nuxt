@@ -14,10 +14,14 @@ async function addNote() {
 }
 
 async function deleteNote(id: number){
-    await $fetch('/api/notes/' + id, {method: 'DELETE'})
-    await refresh()
-}
+     if(!confirm('Are you sure you want to delete this note?')) 
+    return 0;
 
+    await $fetch('/api/notes/' + id, {method: 'DELETE'})
+    await refresh();
+
+    
+}
 function clearDraft(){
     draft.value = ''
 }
