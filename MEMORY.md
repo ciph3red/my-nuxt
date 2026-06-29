@@ -62,7 +62,7 @@ These are **intentional prompts, not bugs to silently fix**. Surface them, don't
 
 ### As of 2026-06-28 — break point
 
-**Where we stopped:** about to start `feature/delete-note`. Branch not yet created. No code written yet for delete.
+**Where we stopped:** `feature/delete-note` shipped on `feat/delete-note` (2 commits: server `df2a95a`, UI `8b5ede2`). Branch ready for push / PR / merge.
 
 **Recently completed (this session and recent prior):**
 
@@ -70,26 +70,20 @@ These are **intentional prompts, not bugs to silently fix**. Surface them, don't
 - PR #2 `feat/hello-endpoint` merged (1 commit `5bfc4b2`).
 - PR #3 `chore/sync-memory` merged (1 commit `ae50bc3`).
 - PR #4 `feature/persist-notes-store` merged (2 commits: `775534e chore: added better-sqlite3 and deps`, `48a5d8c feat: persist added notes to SQLite`).
+- PR #5 `feature/delete-note` shipped on `feat/delete-note` (2 commits, not yet merged): `df2a95a feat: added DELETE /api/notes/[id] endpoint`, `8b5ede2 feat: added Delete button to notes page`. Server: `deleteNote(id)` in `server/utils/notes.ts`, `DELETE /api/notes/:id` returns 204/404/400. UI: per-note Delete button in `notes.vue`.
 - Housekeeping commit `23548a4 housekeeping: removed duplicate .data entry in gitignore`.
 
 **Architectural state of `main`:**
 
 - `server/utils/notes.ts` uses `better-sqlite3`, file at `.data/notes.sqlite`. Exports `addNote`, `getAllNotes`, type `Note`. Schema lives inline as a `CREATE TABLE IF NOT EXISTS` in the module body. The `note` API uses `getAllNotes()` / `addNote()` (no longer the old `notes` array).
-- `app/pages/notes.vue` calls `/api/notes/` and POSTs to `/api/notes`; no delete UI yet.
+- `app/pages/notes.vue` calls `/api/notes/`, POSTs to `/api/notes`, and DELETEs per-note via `/api/notes/:id`; refreshes after each mutation.
 - No tests yet.
 - `MEMORY.md` is accurate as of last sync; the only stale-looking wording is past-tense commit messages and one `doc:` vs `docs:` subject (commit `ae50bc3`) — not worth rewriting history to fix.
 
-**Carry-forward design decisions for `feature/delete-note`:**
-
-- Endpoint: `DELETE /api/notes/:id`. File: `server/api/notes/[id].delete.ts`.
-- Return 204 No Content on success, 404 if the id doesn't exist, 400 if id isn't a positive integer.
-- Add `deleteNote(id: number): boolean` to `server/utils/notes.ts`. Returns `true` if a row was deleted, `false` otherwise.
-- UI: per-note "Delete" button in `app/pages/notes.vue`. On click: `$fetch('/api/notes/' + id, { method: 'DELETE' })` then `refresh()`. No confirmation dialog (keep it small; add as a stretch).
-- Commit shape: open question — 3 commits (one per file) or 2 commits (server as one, UI as one). User had not chosen when they took a break.
+**Carry-forward design decisions for `feature/delete-note`:** ~~shipped on `feat/delete-note`, awaiting PR.~~
 
 **Open follow-ups noted but not started:**
 
-- `chore/sync-memory` once `feature/delete-note` lands (update MEMORY.md to remove the "no tests" / "no delete" implicit gaps).
 - Tests via Vitest (Option 3 from the last planning beat).
 - Edit-note (`feature/edit-note`) — adds PUT/PATCH semantics.
 - Tags / categories (`feature/note-tags`) — schema migration.
