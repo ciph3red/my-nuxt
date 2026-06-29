@@ -5,6 +5,7 @@ import { join } from 'node:path'
 const DATA_DIR = join(process.cwd(), '.data')
 const DB_FILE = join(DATA_DIR, 'notes.sqlite')
 
+
 mkdirSync(DATA_DIR, { recursive: true })
 
 const db = new Database(DB_FILE)
@@ -18,6 +19,8 @@ db.exec(`
 
 const insertNote = db.prepare('INSERT INTO notes (text) VALUES (?)')
 const selectAllNotes = db.prepare('SELECT * FROM notes ORDER BY id')
+const deleteNoteStmt = db.prepare('DELETE FROM notes WHERE id = ?')
+
 
 export type Note = {
     id: number
@@ -33,5 +36,7 @@ export function getAllNotes(): Note[] {
     return selectAllNotes.all() as Note[]
 }
 
-
-
+export function deleteNote(id: number): boolean {
+    const result = deleteNoteStmt.run(id)
+    return Boolean(result.changes > 0)
+}
