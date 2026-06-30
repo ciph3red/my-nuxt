@@ -2,6 +2,8 @@
 const { data: notes, refresh } = await useFetch('/api/notes/')
 
 const draft = ref('')
+const editingId = ref<number | null>(null)
+const editDraft = ref('')
 
 async function addNote() {
     if (!draft.value.trim()) return
@@ -25,6 +27,28 @@ async function deleteNote(id: number){
 function clearDraft(){
     draft.value = ''
 }
+
+function startEdit(id: number, text: string) {
+    editingId.value = id
+    editDraft.value = text
+}
+
+function cancelEdit() {
+    editingId.value = null
+    editDraft.value = ''
+}
+
+async function saveEdit(id: number){
+    if (!editDraft.value.trim()) return
+    await $fetch('/api/notes/' + id, {
+        method: 'PUT',
+        body: { text: editDraft.value }
+    })
+    cancelEdit()
+    await refresh()
+}
+
+
 </script>
 
 <template>
@@ -32,8 +56,19 @@ function clearDraft(){
     <h1>Notes</h1>
     <p>{{ notes?.length ?? 0 }} notes</p>
     <ul>
-        <li v-for="note in notes" :key="note.id">{{ note.text }}
-        <button type='button' @click="deleteNote(note.id)">Delete</button></li>
+        <li v-for="note in notes" :key="note.id">
+        <template v-if='editingId === note.id'>
+            <input v-model="editDraft" />
+            <button type="button"@click="saveEdit(note.id)">Save</button>
+            <button type="button" @click="cancelEdit">Cancel</button>
+            </template>
+        <template v-else>{{ note.text }}
+        <button type="button" @click="startEdit(note.id, note.text)">Edit</button>
+        <button type="button" @click="deleteNote(note.id)">Delete</button>
+    </template>
+        
+        
+        </li>
     </ul>
     <form @submit.prevent="addNote">
         <input v-model="draft" placeholder="New note..." />

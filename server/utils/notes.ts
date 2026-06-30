@@ -20,7 +20,7 @@ db.exec(`
 const insertNote = db.prepare('INSERT INTO notes (text) VALUES (?)')
 const selectAllNotes = db.prepare('SELECT * FROM notes ORDER BY id')
 const deleteNoteStmt = db.prepare('DELETE FROM notes WHERE id = ?')
-
+const updateNoteStmt = db.prepare('UPDATE notes SET text = ? WHERE id = ?')
 
 export type Note = {
     id: number
@@ -39,4 +39,10 @@ export function getAllNotes(): Note[] {
 export function deleteNote(id: number): boolean {
     const result = deleteNoteStmt.run(id)
     return Boolean(result.changes > 0)
+}
+
+export function updateNote(id: number, text: string): Note | null {
+    const result = updateNoteStmt.run(text, id)
+    if (result.changes === 0) return null
+    return {id, text}
 }
